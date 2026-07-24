@@ -1,30 +1,30 @@
-# WASPWARE - Linux Build Guide
+# WASPWARE - Linux Derleme Rehberi
 
-## 📋 Overview
-This guide provides comprehensive instructions for building WASPWARE on various Linux platforms, including cross-compilation for different architectures.
+## 📋 Genel Bakış
+Bu rehber, WASPWARE'i çeşitli Linux platformlarında derlemek için kapsamlı talimatlar sağlar, farklı mimariler için çapraz derleme dahil.
 
 ---
 
-## 🔧 Prerequisites
+## 🔧 Gereksinimler
 
-### 1. Install Go Language
+### 1. Go Dili Kurulumu
 
 #### Ubuntu/Debian
 ```bash
-# Add Go repository
+# Go deposunu ekle
 wget https://go.dev/release/go1.21.3.linux-amd64.tar.gz
 sudo tar -C /usr/local -xzf go1.21.3.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 
-# Verify
+# Doğrula
 go version
 ```
 
 #### CentOS/RHEL/Fedora
 ```bash
 sudo yum install -y go
-# OR
+# VEYA
 sudo dnf install -y go
 ```
 
@@ -33,137 +33,162 @@ sudo dnf install -y go
 sudo pacman -S go
 ```
 
-### 2. Install Build Tools (Optional)
+### 2. Derleme Araçları Kurulumu (Opsiyonel)
 ```bash
-# For native cross-compilation
+# Yerel çapraz derleme için
 sudo apt-get install gcc musl-dev   # Debian/Ubuntu
 sudo yum install gcc musl-devel      # CentOS/RHEL
 ```
 
 ---
 
-## 🏗️ Basic Build Commands
+## 🏗️ Temel Derleme Komutları
 
-### Simple Build (Current Platform)
+### Basit Derleme (Mevcut Platform)
 ```bash
 cd waspWARE
 go build -o waspWARE ./waspWARE/waspWARE.go
 ```
 
-### Build with Release Flags (Optimized)
+### Optimizasyon Bayrakları ile Derleme
 ```bash
 go build -ldflags="-s -w" -o waspWARE ./waspWARE/waspWARE.go
+
+# Opsiyonel: Daha küçük binary için UPX sıkıştırma (~%57 boyut azalması)
+upx -9 --best waspWARE
+
+# Doğrula
+ls -lh waspWARE
+# Çıktı: ~851 KB (2.0 MB'den)
 ```
 
-### Build with Version Info
+### Versiyon Bilgisi ile Derleme
 ```bash
 go build -ldflags="-s -w -X 'main.Version=1.0.0'" \
   -o waspWARE ./waspWARE/waspWARE.go
+
+# UPX sıkıştırma
+upx -9 --best waspWARE
 ```
 
 ---
 
-## 🎯 Cross-Compilation for Different Linux Platforms
+## 🎯 Farklı Linux Platformları için Çapraz Derleme
 
-### amd64/x86_64 (Standard Desktop)
+### amd64/x86_64 (Standart Masaüstü)
 ```bash
-GOOS=linux GOARCH=amd64 go build -o waspWARE-amd64 ./waspWARE/waspWARE.go
+GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o waspWARE-amd64 ./waspWARE/waspWARE.go
+
+# Opsiyonel: UPX sıkıştırma
+upx -9 --best waspWARE-amd64
 ```
 
 ### ARM64 (Apple Silicon, Raspberry Pi 4/5, AWS Graviton)
 ```bash
-GOOS=linux GOARCH=arm64 go build -o waspWARE-arm64 ./waspWARE/waspWARE.go
+GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o waspWARE-arm64 ./waspWARE/waspWARE.go
+
+# Opsiyonel: UPX sıkıştırma
+upx -9 --best waspWARE-arm64
 ```
 
-### ARMv7 (Raspberry Pi 3/4, older ARM devices)
+### ARMv7 (Raspberry Pi 3/4, eski ARM cihazlar)
 ```bash
-GOOS=linux GOARCH=arm GOARM=7 go build -o waspWARE-armhf ./waspWARE/waspWARE.go
+GOOS=linux GOARCH=arm GOARM=7 go build -ldflags="-s -w" -o waspWARE-armhf ./waspWARE/waspWARE.go
+
+# Opsiyonel: UPX sıkıştırma
+upx -9 --best waspWARE-armhf
 ```
 
-### ARMv8 (Raspberry Pi 4/5, newer ARM devices)
+### ARMv8 (Raspberry Pi 4/5, yeni ARM cihazlar)
 ```bash
-GOOS=linux GOARCH=arm GOARM=8 go build -o waspWARE-armv8 ./waspWARE/waspWARE.go
+GOOS=linux GOARCH=arm GOARM=8 go build -ldflags="-s -w" -o waspWARE-armv8 ./waspWARE/waspWARE.go
+
+# Opsiyonel: UPX sıkıştırma
+upx -9 --best waspWARE-armv8
 ```
 
-### 32-bit x86 (Legacy Systems)
+### 32-bit x86 (Eski Sistemler)
 ```bash
-GOOS=linux GOARCH=386 go build -o waspWARE-386 ./waspWARE/waspWARE.go
+GOOS=linux GOARCH=386 go build -ldflags="-s -w" -o waspWARE-386 ./waspWARE/waspWARE.go
+
+# Opsiyonel: UPX sıkıştırma
+upx -9 --best waspWARE-386
 ```
 
 ---
 
-## 🪟 Cross-Compilation to Windows (.exe) from Linux
+## 🪟 Linux'tan Windows (.exe) için Çapraz Derleme
 
-### Build Windows Executable on Linux
+### Linux'ta Windows Çalıştırılabilir Dosyası Derleme
 
-You can cross-compile WASPWARE for Windows from a Linux system using the `GOOS` environment variable:
+GOOS ortam değişkenini kullanarak WASPWARE'i Windows için çapraz derleyebilirsiniz:
 
-#### Basic Windows Build (amd64)
+#### Temel Windows Derlemesi (amd64)
 ```bash
-# Build for Windows amd64 (standard Windows 10/11)
+# Windows amd64 için derle (standart Windows 10/11)
 GOOS=windows GOARCH=amd64 go build -o waspWARE.exe ./waspWARE/waspWARE.go
 
-# Verify the executable
+# Çalıştırılabilir dosyayı doğrula
 file waspWARE.exe
-# Output: waspWARE.exe: PE32+ executable (console) x86-64, for MS Windows
+# Çıktı: waspWARE.exe: PE32+ executable (console) x86-64, for MS Windows
 ```
 
-#### Build for Different Windows Architectures
+#### Farklı Windows Mimarileri için Derleme
 
-##### Windows on ARM (Surface Pro X, newer devices)
+##### Windows on ARM (Surface Pro X, yeni cihazlar)
 ```bash
 GOOS=windows GOARCH=arm64 go build -o waspWARE-arm64.exe ./waspWARE/waspWARE.go
 ```
 
-##### 32-bit Windows (Legacy Systems)
+##### 32-bit Windows (Eski Sistemler)
 ```bash
 GOOS=windows GOARCH=386 go build -o waspWARE-386.exe ./waspWARE/waspWARE.go
 ```
 
-##### Windows ARM (Windows on ARM devices)
+##### Windows ARM (Windows on ARM cihazlar)
 ```bash
 GOOS=windows GOARCH=arm go build -o waspWARE-arm.exe ./waspWARE/waspWARE.go
 ```
 
-#### Optimized Windows Build
+#### Optimizasyonlu Windows Derlemesi
 ```bash
-# Build with release flags for smaller binary
+# Daha küçük binary için optimizasyon bayrakları ile derle
 GOOS=windows GOARCH=amd64 go build \
   -ldflags="-s -w" \
   -o waspWARE.exe ./waspWARE/waspWARE.go
 
-# Verify size and properties
+# Boyut ve özellikleri doğrula
 ls -lh waspWARE.exe
 file waspWARE.exe
 ```
 
 ---
 
-## 🐳 Docker Build (Recommended for Cross-Compilation)
+## 🐳 Docker Derleme (Çapraz Derleme için Önerilir)
 
-### Using Official Go Image
+### Resmi Go Görselini Kullanma
 ```bash
-# Pull image
+# Göreyi çek
 docker pull golang:1.21-alpine
 
-# Build for current platform
+# Mevcut platform için derle
 docker run --rm -v $(pwd):/app golang:1.21-alpine \
   go build -o /app/waspWARE ./waspWARE/waspWARE.go
 
-# Build for ARM64
+# ARM64 için derle
 docker run --rm -v $(pwd):/app golang:1.21-alpine \
   GOOS=linux GOARCH=arm64 go build -o /app/waspWARE-arm64 ./waspWARE/waspWARE.go
 
-# Build for ARMv7
+# ARMv7 için derle
 docker run --rm -v $(pwd):/app golang:1.21-alpine \
   GOOS=linux GOARCH=arm GOARM=7 go build -o /app/waspWARE-armhf ./waspWARE/waspWARE.go
 ```
 
-### Using Multi-Stage Dockerfile for Windows
+### Windows için Çoklu Aşamalı Dockerfile Kullanma
 
-Create `Dockerfile`:
+`Dockerfile` oluştur:
 ```dockerfile
-# Stage 1: Build for Linux
+# Aşama 1: Linux için derleme
 FROM golang:1.21-alpine AS builder-linux
 
 WORKDIR /app
@@ -171,7 +196,7 @@ COPY waspWARE/waspWARE.go .
 
 RUN go build -ldflags="-s -w" -o waspWARE ./waspWARE/waspWARE.go
 
-# Stage 2: Build for Windows
+# Aşama 2: Windows için derleme
 FROM golang:1.21-alpine AS builder-windows
 
 WORKDIR /app
@@ -179,7 +204,7 @@ COPY waspWARE/waspWARE.go .
 
 RUN GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o waspWARE.exe .
 
-# Stage 3: Final image with Windows binary
+# Aşama 3: Windows binary'si olan son görsel
 FROM alpine:latest
 RUN apk add --no-cache winpty
 
@@ -188,57 +213,57 @@ COPY --from=builder-windows /app/waspWARE.exe /waspWARE.exe
 ENTRYPOINT ["winpty", "/waspWARE.exe"]
 ```
 
-Build and run:
+Derle ve çalıştır:
 ```bash
 docker build -t waspware:latest .
 
-# Run on Linux (will execute via winpty)
+# Linux'ta çalıştır (winpty aracılığıyla çalışacak)
 docker run --rm -v $(pwd):/app waspware:latest \
   -key "mykey" -dizin "/target/directory"
 
-# Or copy Windows binary to another system
+# Veya Windows binary'sini başka bir sisteme kopyala
 docker run --rm -v $(pwd)/bin:/output waspware:latest \
   cp /waspWARE.exe /output/waspWARE-windows-amd64.exe
 ```
 
 ---
 
-### Docker Multi-Architecture Build
+### Çoklu Mimarili Docker Derlemesi
 
-Create `build-all-platforms.sh`:
+`build-all-platforms.sh` oluştur:
 ```bash
 #!/bin/bash
-# WASPWARE Multi-Platform Build Script (Linux + Windows)
+# WASPWARE Çoklu-Platform Derleme Senaryosu (Linux + Windows)
 
 set -e
 
 BINARY_DIR="bin"
 mkdir -p "$BINARY_DIR"
 
-echo "🔨 Building WASPWARE for all platforms..."
+echo "🔨 WASPWARE için tüm platformlarda derleniyor..."
 
-# Linux Platforms
+# Linux Platformları
 echo ""
-echo "🐧 Building for Linux platforms..."
+echo "🐧 Linux platformları için derleniyor..."
 
 GOOS=linux GOARCH=amd64 go build -o "$BINARY_DIR/waspWARE-amd64" ./waspWARE/waspWARE.go
 GOOS=linux GOARCH=arm64 go build -o "$BINARY_DIR/waspWARE-arm64" ./waspWARE/waspWARE.go
 GOOS=linux GOARCH=arm GOARM=7 go build -o "$BINARY_DIR/waspWARE-armhf" ./waspWARE/waspWARE.go
 GOOS=linux GOARCH=386 go build -o "$BINARY_DIR/waspWARE-386" ./waspWARE/waspWARE.go
 
-# Windows Platforms
+# Windows Platformları
 echo ""
-echo "🪟 Building for Windows platforms..."
+echo "🪟 Windows platformları için derleniyor..."
 
 GOOS=windows GOARCH=amd64 go build -o "$BINARY_DIR/waspWARE-windows-amd64.exe" ./waspWARE/waspWARE.go
 GOOS=windows GOARCH=arm64 go build -o "$BINARY_DIR/waspWARE-windows-arm64.exe" ./waspWARE/waspWARE.go
 
 echo ""
-echo "✅ All builds completed!"
+echo "✅ Tüm derlemeler tamamlandı!"
 ls -lh "$BINARY_DIR/"
 ```
 
-Make executable and run:
+Çalıştırılabilir yap ve çalıştır:
 ```bash
 chmod +x build-all-platforms.sh
 ./build-all-platforms.sh
@@ -246,9 +271,9 @@ chmod +x build-all-platforms.sh
 
 ---
 
-### Docker Multi-Stage for All Platforms
+### Tüm Platformlar için Çoklu Aşamalı Docker
 
-Create `Dockerfile.multi`:
+`Dockerfile.multi` oluştur:
 ```dockerfile
 FROM golang:1.21-alpine AS builder
 
@@ -272,7 +297,7 @@ COPY --from=builder /app/waspWARE.exe /waspWARE.exe
 ENTRYPOINT ["winpty", "/waspWARE.exe"]
 ```
 
-Build for specific platform:
+Belirli platform için derleme:
 ```bash
 # Linux amd64
 docker build --target linux -t waspware-linux .
@@ -283,19 +308,19 @@ docker build --target windows -t waspware-windows .
 
 ---
 
-## 📦 Build All Platforms Script
+## 📦 Tüm Platformlar Derleme Senaryosu
 
-Create `build-all.sh`:
+`build-all.sh` oluştur:
 ```bash
 #!/bin/bash
-# WASPWARE Multi-Platform Build Script
+# WASPWARE Çoklu-Platform Derleme Senaryosu
 
 set -e
 
 BINARY_DIR="bin"
 mkdir -p "$BINARY_DIR"
 
-echo "🔨 Building WASPWARE for all platforms..."
+echo "🔨 WASPWARE için tüm platformlarda derleniyor..."
 
 # amd64
 GOOS=linux GOARCH=amd64 go build -o "$BINARY_DIR/waspWARE-amd64" ./waspWARE/waspWARE.go
@@ -312,11 +337,11 @@ GOOS=linux GOARCH=arm GOARM=8 go build -o "$BINARY_DIR/waspWARE-armv8" ./waspWAR
 # 386
 GOOS=linux GOARCH=386 go build -o "$BINARY_DIR/waspWARE-386" ./waspWARE/waspWARE.go
 
-echo "✅ All builds completed!"
+echo "✅ Tüm derlemeler tamamlandı!"
 ls -lh "$BINARY_DIR/"
 ```
 
-Make executable and run:
+Çalıştırılabilir yap ve çalıştır:
 ```bash
 chmod +x build-all.sh
 ./build-all.sh
@@ -324,103 +349,103 @@ chmod +x build-all.sh
 
 ---
 
-## ✅ Verification Steps
+## ✅ Doğrulama Adımları
 
-### 1. Check Binary Exists
+### 1. Binary'nin Var Olup Olmadığını Kontrol Et
 ```bash
 ls -lh waspWARE*
 ```
 
-### 2. Test Execution
+### 2. Çalıştırma Testi
 ```bash
 ./waspWARE -help
-# OR run interactively
+# VEYA interaktif olarak çalıştır
 ./waspWARE
 ```
 
-### 3. Verify File Properties
+### 3. Dosya Özelliklerini Doğrula
 ```bash
 file waspWARE
 stat waspWARE
 ```
 
-### 4. Test Encryption
+### 4. Şifreleme Testi
 ```bash
 mkdir -p /tmp/test-encryption
-echo "Test file content" > /tmp/test-encryption/test.txt
+echo "Test dosya içeriği" > /tmp/test-encryption/test.txt
 ./waspWARE -key "test123" -dizin /tmp/test-encryption
 ls -la /tmp/test-encryption/
 ```
 
 ---
 
-## 📊 Binary Sizes by Architecture
+## 📊 Mimariye Göre Binary Boyutları
 
-| Platform | Architecture | Binary Size | Use Case |
-|----------|-------------|-------------|----------|
-| Linux | amd64 | ~3.0 MB | Standard x86_64 Linux |
+| Platform | Mimari | Binary Boyutu | Kullanım Alanı |
+|----------|--------|---------------|----------------|
+| Linux | amd64 | ~3.0 MB | Standart x86_64 Linux |
 | Linux | arm64 | ~2.8 MB | Apple Silicon, Raspberry Pi 4/5 |
 | Linux | armv7 | ~2.8 MB | Raspberry Pi 3/4 (32-bit) |
 | Linux | armv8 | ~2.8 MB | Raspberry Pi 4/5 (64-bit) |
-| Linux | 386 | ~2.9 MB | Legacy 32-bit systems |
+| Linux | 386 | ~2.9 MB | Eski 32-bit sistemler |
 | Windows | amd64 | ~3.0 MB | Windows 10/11 x86_64 |
-| Windows | arm64 | ~2.8 MB | Windows on ARM devices |
-| Windows | 386 | ~2.9 MB | Legacy 32-bit Windows |
+| Windows | arm64 | ~2.8 MB | Windows on ARM cihazlar |
+| Windows | 386 | ~2.9 MB | Eski 32-bit Windows |
 
 ---
 
-## 🪟 Windows Build Verification
+## 🪟 Windows Derleme Doğrulama
 
-### Verify Windows Executable
+### Windows Çalıştırılabilir Dosyasını Doğrula
 ```bash
-# Check file type
+# Dosya tipini kontrol et
 file waspWARE.exe
-# Output: waspWARE.exe: PE32+ executable (console) x86-64, for MS Windows
+# Çıktı: waspWARE.exe: PE32+ executable (console) x86-64, for MS Windows
 
-# Check binary size
+# Binary boyutunu kontrol et
 ls -lh waspWARE.exe
 
-# Verify it's a valid Windows PE executable
+# Geçerli Windows PE çalıştırılabilir dosyası olduğunu doğrula
 readelf -h waspWARE.exe 2>/dev/null || objdump -f waspWARE.exe
 ```
 
-### Transfer to Windows
+### Windows'a Taşıma
 ```bash
-# Copy to Windows machine via SCP/SFTP
+# SCP/SFTP aracılığıyla Windows makinesine kopyala
 scp waspWARE.exe user@windows-machine:/path/to/
 
-# Or use USB drive
+# VEYA USB sürücü kullan
 cp waspWARE.exe /media/usb/waspWARE.exe
 
-# Or email the binary
-# (Windows executable can be attached and sent)
+# VEYA binary'yi e-posta ile gönder
+# (Windows çalıştırılabilir dosyası eklenti olarak eklenebilir ve gönderilebilir)
 ```
 
-### Run on Windows
-Once transferred to Windows:
+### Windows'ta Çalıştırma
+Windows'a taşındıktan sonra:
 ```powershell
 # PowerShell
 .\waspWARE.exe -key "mykey" -dizin "C:\target\directory"
 
-# Command Prompt
+# Komut Satırı
 waspWARE.exe -key "mykey" -dizin "C:\target\directory"
 ```
 
 ---
 
-## 🔧 Troubleshooting
+## 🔧 Sorun Giderme
 
-### Issue: "go: cannot find module"
-**Solution:** Ensure you're in the correct directory
+### Sorun: "go: module bulunamadı"
+**Çözüm:** Doğru dizinde olduğunuzdan emin olun
 ```bash
 cd waspWARE
 go build -o waspWARE ./waspWARE/waspWARE.go
 ```
 
-### Issue: Cross-compilation fails with "unknown architecture"
-**Solution:** Install required headers
+### Sorun: Çapraz derleme "bilinmeyen mimari" ile başarısız oluyor
+**Çözüm:** Gerekli başlıkları kurun
 ```bash
-# For ARM64 cross-compilation
+# ARM64 çapraz derleme için
 sudo apt-get install gcc-aarch64-linux-gnu
 export CC=aarch64-linux-gnu-gcc
 
@@ -428,15 +453,15 @@ GOOS=linux GOARCH=arm64 CC=aarch64-linux-gnu-gcc \
   go build -o waspWARE-arm64 ./waspWARE/waspWARE.go
 ```
 
-### Issue: Build fails with permission error
-**Solution:** Use sudo or adjust permissions
+### Sorun: İzni hatası ile derleme başarısız oluyor
+**Çözüm:** sudo kullanın veya izinleri ayarlayın
 ```bash
 sudo chown -R $USER:$USER waspWARE
 go build -o waspWARE ./waspWARE/waspWARE.go
 ```
 
-### Issue: Missing Go installation
-**Solution:** Install Go from official source
+### Sorun: Go kurulumu eksik
+**Çözüm:** Resmi kaynaktan Go'yu kurun
 ```bash
 # Ubuntu/Debian
 curl -LO https://go.dev/dl/go1.21.3.linux-amd64.tar.gz
@@ -444,173 +469,173 @@ sudo tar -C /usr/local -xzf go1.21.3.linux-amd64.tar.gz
 export PATH=$PATH:/usr/local/go/bin
 ```
 
-### Issue: Windows build fails with "unknown architecture"
-**Solution:** Install required cross-compilation tools
+### Sorun: Windows derlemesi "bilinmeyen mimari" ile başarısız oluyor
+**Çözüm:** Gerekli çapraz derleme araçlarını kurun
 ```bash
-# Install GCC for Windows target (optional, Go can cross-compile without it)
+# Windows hedefi için GCC kurulumu (opsiyonel, Go bunu olmadan da çapraz derleyebilir)
 sudo apt-get install gcc-multilib
 
-# For ARM64 Windows builds
+# ARM64 Windows derlemeleri için
 GOOS=windows GOARCH=arm64 go build -o waspWARE-arm64.exe ./waspWARE/waspWARE.go
 ```
 
-### Issue: Generated .exe is not recognized on Windows
-**Solution:** Ensure you're building for the correct platform
+### Sorun: Oluşturulan .exe Linux'ta tanınmıyor
+**Çözüm:** Doğru platform için derlediğinizden emin olun
 ```bash
-# Verify build target
-echo "Building for: GOOS=$GOOS GOARCH=$GOARCH"
+# Derleme hedefini doğrula
+echo "Şu platform için derleniyor: GOOS=$GOOS GOARCH=$GOARCH"
 
-# Clean and rebuild
+# Temizle ve yeniden derle
 rm -f *.exe
 GOOS=windows GOARCH=amd64 go build -o waspWARE.exe ./waspWARE/waspWARE.go
 
-# Verify
+# Doğrula
 file waspWARE.exe
 ```
 
-### Issue: Permission denied when running .exe on Linux
-**Solution:** This is expected - Windows executables can't run on Linux directly. Transfer to Windows system.
+### Sorun: Linux'ta .exe çalıştırırken "İzin reddedildi"
+**Çözüm:** Bu beklenir - Windows çalıştırılabilir dosyaları doğrudan Linux'ta çalışamaz. Windows sistemine taşıyın.
 ```bash
-# Check file type
+# Dosya tipini kontrol et
 file waspWARE.exe
-# Should show: PE32+ executable for MS Windows
+# Şunu göstermeli: PE32+ executable for MS Windows
 
-# Transfer to Windows and run there
+# Windows'a taşıyıp orada çalıştırın
 ```
 
 ---
 
-## 📝 Notes
+## 📝 Notlar
 
-- WASPWARE is a **single executable** with no external dependencies
-- No Go runtime required (embedded in binary)
-- Compatible with:
+- WASPWARE, dış bağımlılıklar olmadan **tek çalıştırılabilir** bir dosyadır
+- Go runtime gerekli değildir (binary'de gömülü)
+- Uyumlu:
   - Ubuntu, Debian, Mint
   - CentOS, RHEL, Fedora
   - Arch Linux, Manjaro
   - Raspberry Pi OS
   - Alpine Linux
-  - Any Linux distribution with Go installed
+  - Go yüklü herhangi bir Linux dağıtımı
 
 ---
 
-## 🎯 Quick Start Scripts
+## 🎯 Hızlı Başlangıç Senaryoları
 
-### Linux Build Script
-Save as `build-linux.sh`:
+### Linux Derleme Senaryosu
+`build-linux.sh` olarak kaydedin:
 ```bash
 #!/bin/bash
-# WASPWARE Linux Build Script
+# WASPWARE Linux Derleme Senaryosu
 
-echo "🔨 Building WASPWARE for Linux..."
+echo "🔨 WASPWARE için Linux'ta derleniyor..."
 
 cd waspWARE
 
-# Build with optimization
+# Optimizasyon ile derle
 go build -ldflags="-s -w" -o waspWARE ./waspWARE/waspWARE.go
 
 if [ $? -eq 0 ]; then
-    echo "✅ Build successful!"
+    echo "✅ Derleme başarılı!"
     echo "📦 Binary: waspWARE"
-    echo "📊 Size: $(stat -c%s waspWARE) bytes"
+    echo "📊 Boyut: $(stat -c%s waspWARE) bytes"
     
-    # Show supported architectures
+    # Desteklenen mimarileri göster
     echo ""
-    echo "🎯 Supported architectures:"
+    echo "🎯 Desteklenen mimariler:"
     echo "  - amd64 (x86_64)"
     echo "  - arm64 (ARM 64-bit)"
     echo "  - armv7 (ARM 32-bit)"
-    echo "  - armv8 (ARM 64-bit variant)"
+    echo "  - armv8 (ARM 64-bit varyantı)"
     echo "  - 386 (x86 32-bit)"
 else
-    echo "❌ Build failed!"
+    echo "❌ Derleme başarısız!"
     exit 1
 fi
 ```
 
-**Run:**
+**Çalıştır:**
 ```bash
 chmod +x build-linux.sh
 ./build-linux.sh
 ```
 
-### Windows Build Script from Linux
-Save as `build-windows-from-linux.sh`:
+### Linux'tan Windows Derleme Senaryosu
+`build-windows-from-linux.sh` olarak kaydedin:
 ```bash
 #!/bin/bash
-# WASPWARE Windows Build Script (from Linux)
+# WASPWARE Windows Derleme Senaryosu (Linux'tan)
 
-echo "🪟 Building WASPWARE for Windows..."
+echo "🪟 WASPWARE için Windows'ta derleniyor..."
 
 cd waspWARE
 
-# Build for Windows amd64
+# Windows amd64 için derle
 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" \
   -o waspWARE.exe ./waspWARE/waspWARE.go
 
 if [ $? -eq 0 ]; then
-    echo "✅ Windows build successful!"
+    echo "✅ Windows derlemesi başarılı!"
     echo "📦 Binary: waspWARE.exe"
-    echo "📊 Size: $(stat -c%s waspWARE.exe) bytes"
+    echo "📊 Boyut: $(stat -c%s waspWARE.exe) bytes"
     
-    # Verify it's a Windows executable
+    # Windows çalıştırılabilir dosyası olduğunu doğrula
     echo ""
-    echo "🔍 File type:"
+    echo "🔍 Dosya tipi:"
     file waspWARE.exe
     
-    # Show supported Windows architectures
+    # Desteklenen Windows mimarilerini göster
     echo ""
-    echo "🎯 Supported Windows architectures:"
+    echo "🎯 Desteklenen Windows mimarileri:"
     echo "  - amd64 (Windows x86_64)"
     echo "  - arm64 (Windows on ARM)"
-    echo "  - 386 (Legacy Windows)"
+    echo "  - 386 (Eski Windows)"
 else
-    echo "❌ Build failed!"
+    echo "❌ Derleme başarısız!"
     exit 1
 fi
 ```
 
-**Run:**
+**Çalıştır:**
 ```bash
 chmod +x build-windows-from-linux.sh
 ./build-windows-from-linux.sh
 ```
 
-### Multi-Platform Build Script
-Save as `build-all-platforms.sh`:
+### Çoklu-Platform Derleme Senaryosu
+`build-all-platforms.sh` olarak kaydedin:
 ```bash
 #!/bin/bash
-# WASPWARE Multi-Platform Build Script
+# WASPWARE Çoklu-Platform Derleme Senaryosu
 
 set -e
 
 BINARY_DIR="bin"
 mkdir -p "$BINARY_DIR"
 
-echo "🔨 Building WASPWARE for all platforms..."
+echo "🔨 WASPWARE için tüm platformlarda derleniyor..."
 
-# Linux Platforms
+# Linux Platformları
 echo ""
-echo "🐧 Building for Linux platforms..."
+echo "🐧 Linux platformları için derleniyor..."
 
 GOOS=linux GOARCH=amd64 go build -o "$BINARY_DIR/waspWARE-amd64" ./waspWARE/waspWARE.go
 GOOS=linux GOARCH=arm64 go build -o "$BINARY_DIR/waspWARE-arm64" ./waspWARE/waspWARE.go
 GOOS=linux GOARCH=arm GOARM=7 go build -o "$BINARY_DIR/waspWARE-armhf" ./waspWARE/waspWARE.go
 GOOS=linux GOARCH=386 go build -o "$BINARY_DIR/waspWARE-386" ./waspWARE/waspWARE.go
 
-# Windows Platforms
+# Windows Platformları
 echo ""
-echo "🪟 Building for Windows platforms..."
+echo "🪟 Windows platformları için derleniyor..."
 
 GOOS=windows GOARCH=amd64 go build -o "$BINARY_DIR/waspWARE-windows-amd64.exe" ./waspWARE/waspWARE.go
 GOOS=windows GOARCH=arm64 go build -o "$BINARY_DIR/waspWARE-windows-arm64.exe" ./waspWARE/waspWARE.go
 
 echo ""
-echo "✅ All builds completed!"
+echo "✅ Tüm derlemeler tamamlandı!"
 ls -lh "$BINARY_DIR/"
 ```
 
-**Run:**
+**Çalıştır:**
 ```bash
 chmod +x build-all-platforms.sh
 ./build-all-platforms.sh
@@ -618,9 +643,9 @@ chmod +x build-all-platforms.sh
 
 ---
 
-## 📚 Additional Resources
+## 📚 Ek Kaynaklar
 
-- [Go Cross-compilation](https://go.dev/doc/install/source#environment)
-- [Linux Build Issues](https://github.com/golang/go/wiki/LinuxBuildIssues)
-- [ARM Cross-compilation](https://go.dev/doc/install/source#environment)
-- [Docker with Go](https://docs.docker.com/language/golang/)
+- [Go Çapraz Derleme](https://go.dev/doc/install/source#environment)
+- [Linux Derleme Sorunları](https://github.com/golang/go/wiki/LinuxBuildIssues)
+- [ARM Çapraz derleme](https://go.dev/doc/install/source#environment)
+- [Docker ile Go](https://docs.docker.com/language/golang/)

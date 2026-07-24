@@ -1,156 +1,178 @@
-# WASPWARE - File Encryption Tool
+# WASPWARE - Dosya Şifreleme Aracı
 
 ![WASPWARE Logo](https://github.com/waspthebughunter/waspWARE/assets/100480448/d562bb91-c0be-4ce8-89b4-1b3aef901f13)
 ![WASPWARE Screenshot](https://github.com/waspthebughunter/waspWARE/assets/100480448/b1351478-cc41-4813-bc94-e921ae9cfab2)
 
-> **Disclaimer:** This tool is for educational purposes only. I am not responsible for your harmful actions!
+> **Uyarı:** Bu araç eğitim amaçlıdır. Zararlı eylemler için sorumluluk kabul edilmez!
 
 ---
 
-## 📋 Overview
+## 📋 Genel Bakış
 
-WASPWARE is a powerful file encryption utility written in Go that uses AES-256-GCM encryption to securely encrypt files and directories. All encrypted files are automatically renamed with a `.wasp` extension for easy identification.
+WASPWARE, dosyaları ve dizinleri AES-256-GCM şifreleme algoritması kullanarak güvenli bir şekilde şifreleyen güçlü bir Go tabanlı dosya şifreleme aracına sahiptir. Şifrelenen tüm dosyalar kolay tanımlanması için otomatik olarak `.wasp` uzantısına sahip olacak şekilde yeniden adlandırılır.
 
-### Key Features
+### Ana Özellikler
 
-- 🔐 **AES-256-GCM Encryption** - Industry-standard encryption algorithm
-- 📁 **Directory-wide Encryption** - Encrypt entire folders recursively
-- 🔑 **Secure Key Management** - Optional password-based encryption keys
-- 🔄 **Automatic Extension Change** - Encrypted files get `.wasp` extension
-- 💾 **Single Executable** - No external dependencies required
-- 🎯 **Cross-Platform** - Build for Linux, Windows, and multiple architectures
+- 🔐 **AES-256-GCM Şifreleme** - Endüstri standardı şifreleme algoritması
+- 📁 **Dizin Genişletmeli Şifreleme** - Tüm klasörleri yeniden adlandırma ile şifreleme
+- 🔑 **Güvenli Anahtar Yönetimi** - Opsiyonel şifre tabanlı şifreleme anahtarları
+- 🔄 **Otomatik Uzantı Değişimi** - Şifrelenen dosyalar `.wasp` uzantısı alır
+- 💾 **Tek Çalıştırılabilir Dosya** - Dış bağımlılıklar gerektirmez
+- 🎯 **Çapraz Platform** - Linux, Windows ve çoklu mimariler için derleme
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Hızlı Başlangıç
 
-### Basic Usage
+### Temel Kullanım
 
 ```bash
-# Compile the tool
-go build -o waspWARE ./waspWARE/waspWARE.go
+# Aracı derle (optimizasyon ile)
+go build -ldflags="-s -w" -o waspWARE ./waspWARE/waspWARE.go
 
-# Run interactively
+# UPX sıkıştırma (daha küçük binary için önerilir)
+upx -9 --best waspWARE
+
+# İnteraktif olarak çalıştır
 ./waspWARE
 
-# Or use command-line flags
-./waspWARE -key "your-secret-key" -dizin "/path/to/encrypt"
+# Veya komut satırı bayrakları ile
+./waspWARE -key "gizli-anahtarınız" -dizin "/şifrelemek-istediğiniz/dizin"
 ```
 
-### Interactive Mode
-
-When you run WASPWARE without arguments, it will:
-1. Prompt you for an encryption key (or generate a random one)
-2. Ask for confirmation
-3. Request the target directory
-4. Encrypt all files in that directory
-
----
-
-## 🔧 Command-Line Options
+### UPX Sıkıştırma (Opsiyonel ama Önerilir)
 
 ```bash
-./waspWARE -key "your-key" -dizin "/target/directory"
+# Binary'yi UPX ile sıkıştırın (~%57 boyut azalması)
+upx -9 --best waspWARE
+
+# Sıkıştırmayı doğrula
+ls -lh waspWARE
+# Çıktı: ~851 KB (2.0 MB'den)
 ```
 
-- `-key`: Encryption key (optional - can be generated randomly)
-- `-dizin`: Target directory to encrypt (optional - defaults to current directory)
+### İnteraktif Mod
+
+WASPWARE'yi argüman olmadan çalıştırdığınızda:
+1. Şifreleme anahtarı için sizden isteyecek (veya rastgele bir tane oluşturacak)
+2. Onay isteyecek
+3. Hedef dizini talep edecek
+4. O dizindeki tüm dosyaları şifreleyecek
 
 ---
 
-## 📖 Documentation
+## 🔧 Komut Satırı Seçenekleri
 
-### Build Guides
+```bash
+./waspWARE -key "anahtarınız" -dizin "/hedef/dizin"
+```
 
-- **[Linux Build Guide](./build-linux.md)** - Comprehensive instructions for building on Linux platforms, including cross-compilation for different architectures.
-- **[Windows Build Guide](./build-windows.md)** - Step-by-step instructions for building on Windows and cross-compiling from Linux.
+- `-key`: Şifreleme anahtarı (opsiyonel - rastgele oluşturulabilir)
+- `-dizin`: Şifrelemek istediğiniz dizin (opsiyonel - varsayılan olarak mevcut dizin)
 
-### Supported Platforms
+---
 
-| Platform | Architecture | Binary Size |
-|----------|-------------|-------------|
-| Linux | amd64 (x86_64) | ~3.0 MB |
-| Linux | arm64 (ARM 64-bit) | ~2.8 MB |
-| Linux | armv7 (ARM 32-bit) | ~2.8 MB |
-| Linux | armv8 (ARM 64-bit) | ~2.8 MB |
-| Linux | 386 (x86 32-bit) | ~2.9 MB |
-| Windows | amd64 | ~3.0 MB |
-| Windows | arm64 | ~2.8 MB |
-| Windows | 386 | ~2.9 MB |
+## 📖 Dokümantasyon
 
-### Compatible Distributions
+### Derleme Rehberleri
+
+- **[Linux Derleme Rehberi](./build-linux.md)** - Farklı mimariler için çapraz derleme dahil olmak üzere Linux platformlarında derlemek için kapsamlı talimatlar.
+- **[Windows Derleme Rehberi](./build-windows.md)** - Windows'ta ve Linux'tan çapraz derleme için adım adım talimatlar.
+
+### Desteklenen Platformlar
+
+| Platform | Mimari | Binary Boyutu (Ham) | Binary Boyutu (UPX) |
+|----------|--------|---------------------|---------------------|
+| Linux | amd64 (x86_64) | ~2.0 MB | **~851 KB** ✅ |
+| Linux | arm64 (ARM 64-bit) | ~2.0 MB | **~851 KB** ✅ |
+| Linux | armv7 (ARM 32-bit) | ~2.0 MB | **~851 KB** ✅ |
+| Linux | armv8 (ARM 64-bit) | ~2.0 MB | **~851 KB** ✅ |
+| Linux | 386 (x86 32-bit) | ~2.0 MB | **~851 KB** ✅ |
+| Windows | amd64 | ~2.0 MB | **~851 KB** ✅ |
+| Windows | arm64 | ~2.0 MB | **~851 KB** ✅ |
+| Windows | 386 | ~2.0 MB | **~851 KB** ✅ |
+
+### Uyumlu Dağıtımlar
 
 - Ubuntu, Debian, Mint
 - CentOS, RHEL, Fedora
 - Arch Linux, Manjaro
 - Raspberry Pi OS
 - Alpine Linux
-- Any Linux distribution with Go installed
+- Go yüklü herhangi bir Linux dağıtımı
 
 ---
 
-## 🔐 How It Works
+## 🔐 Nasıl Çalışır
 
-1. **Key Generation**: You provide an encryption key, or WASPWARE generates a random one
-2. **Directory Scan**: The tool recursively scans the target directory
-3. **AES Encryption**: Each file is encrypted using AES-256-GCM
-4. **Extension Change**: Encrypted files are renamed with `.wasp` extension
-5. **Completion**: All files are encrypted and ready for secure storage
+1. **Anahtar Oluşturma**: Bir şifreleme anahtarı sağlarsınız veya WASPWARE rastgele bir tane oluşturur
+2. **Dizin Tarama**: Araç hedef dizini yeniden adlandırma ile tarar
+3. **AES Şifreleme**: Her dosya AES-256-GCM kullanarak şifrelenir
+4. **Uzantı Değişimi**: Şifrelenen dosyalar `.wasp` uzantısına sahip olacak şekilde yeniden adlandırılır
+5. **Tamamlama**: Tüm dosyalar şifrelenir ve güvenli depolmaya hazır hale gelir
 
 ---
 
-## 📝 Usage Examples
+## 📝 Kullanım Örnekleri
 
-### Encrypt a Specific Directory
+### Belirli Bir Dizini Şifreleme
 
 ```bash
-./waspWARE -key "MySecretKey123" -dizin "/home/user/documents"
+./waspWARE -key "GizliAnahtar123" -dizin "/kullanici/dokumanlar"
 ```
 
-### Generate Random Key
+### Rastgele Anahtar Oluşturma
 
 ```bash
-./waspWARE  # Press Enter without entering a key for random generation
+./waspWARE  # Anahtar girmeden Enter'a basarak rastgele anahtar oluşturur
 ```
 
-### Encrypt Current Directory
+### Mevcut Dizini Şifreleme
 
 ```bash
-./waspWARE -key "mykey"  # Will encrypt current directory if no path provided
+./waspWARE -key "anahtarim"  # Yol verilmezse mevcut dizini şifreler
 ```
 
 ---
 
-## 🔒 Security Considerations
+## 🔒 Güvenlik Dikkatleri
 
-- **AES-256-GCM** provides authenticated encryption with associated data (AEAD)
-- **Random Nonce**: Each encryption uses a cryptographically secure random nonce
-- **Key Management**: Store your encryption keys securely - they cannot be recovered if lost
-- **File Permissions**: Encrypted files maintain their original permissions
+- **AES-256-GCM** onaylanmış şifreleme ile ilişkili veri (AEAD) sağlar
+- **Rastgele Nonce**: Her şifreleme kriptografik olarak güvenli rastgele nonce kullanır
+- **Anahtar Yönetimi**: Şifreleme anahtarlarınızı güvenli bir şekilde saklayın - kaybedildikleri geri kazanılamaz
+- **Dosya İzinleri**: Şifrelenen dosyalar orijinal izinlerini korur
 
 ---
 
-## 🛠️ Build Instructions
+## 🛠️ Derleme Talimatları
 
-### Native Build (Current Platform)
+### Yerel Derleme (Mevcut Platform)
 
 ```bash
+# Optimizasyon bayrakları ile derle
 go build -ldflags="-s -w" -o waspWARE ./waspWARE/waspWARE.go
+
+# Opsiyonel: Daha küçük binary için UPX sıkıştırma (~%57 boyut azalması)
+upx -9 --best waspWARE
+
+# Doğrula
+ls -lh waspWARE
+# Çıktı: ~851 KB (2.0 MB'den)
 ```
 
-### Cross-Compilation Examples
+### Çapraz Derleme Örnekleri
 
-#### Linux for ARM64
+#### Linux için ARM64
 ```bash
 GOOS=linux GOARCH=arm64 go build -o waspWARE-arm64 ./waspWARE/waspWARE.go
 ```
 
-#### Windows Executable from Linux
+#### Windows Çalıştırılabilir Dosyası Linux'tan
 ```bash
 GOOS=windows GOARCH=amd64 go build -o waspWARE.exe ./waspWARE/waspWARE.go
 ```
 
-### Docker Build
+### Docker Derleme
 
 ```bash
 docker run --rm -v $(pwd):/app golang:1.21-alpine \
@@ -159,37 +181,37 @@ docker run --rm -v $(pwd):/app golang:1.21-alpine \
 
 ---
 
-## 📚 Additional Resources
+## 📚 Ek Kaynaklar
 
-- [Go Cross-compilation Documentation](https://go.dev/doc/install/source#environment)
-- [AES Encryption Best Practices](https://csrc.nist.gov/publications/detail/sp/800-38a/final)
-- [Go Project Layout](https://github.com/golang-standards/project-layout)
-
----
-
-## ⚠️ Important Notes
-
-- **Backup Your Keys**: Encryption keys cannot be recovered if lost
-- **Test Before Production**: Always test encryption on a small subset first
-- **Key Storage**: Store keys in secure locations (password managers, encrypted files)
-- **File Integrity**: Encrypted files maintain their original permissions and metadata
+- [Go Çapraz Derleme Dokümantasyonu](https://go.dev/doc/install/source#environment)
+- [AES Şifreleme En İyi Uygulamaları](https://csrc.nist.gov/publications/detail/sp/800-38a/final)
+- [Go Proje Düzeni](https://github.com/golang-standards/project-layout)
 
 ---
 
-## 📄 License
+## ⚠️ Önemli Notlar
 
-This project is provided for educational purposes. Use responsibly and legally.
+- **Anahtarları Yedekleyin**: Şifreleme anahtarları kaybedildikleri geri kazanılamaz
+- **Üretimden Önce Test Edin**: Her zaman şifrelemeyi küçük bir alt küme üzerinde test edin
+- **Anahtar Depolama**: Anahtarları güvenli konumlarda saklayın (şifre yöneticileri, şifreli dosyalar)
+- **Dosya Bütünlüğü**: Şifrelenen dosyalar orijinal izinlerini ve meta verilerini korur
 
 ---
 
-## 🙏 Acknowledgments
+## 📄 Lisans
+
+Bu proje eğitim amaçları için sağlanmaktadır. Sorumlu ve yasal olarak kullanın.
+
+---
+
+## 🙏 Teşekkürler
 
 - Go Language Team
-- AES Encryption Standards (NIST SP 800-38A)
-- The open-source community
+- AES Şifreleme Standartları (NIST SP 800-38A)
+- Açık kaynak topluluğu
 
 ---
 
 <div align="center">
-  <strong>WASPWARE - Secure File Encryption Made Simple</strong>
+  <strong>WASPWARE - Dosya Şifrelemeyi Basit Hale Getiriyor</strong>
 </div>
