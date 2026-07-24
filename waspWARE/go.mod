@@ -1,3 +1,3 @@
 module waspWARE
 
-go 1.21.3
+go 1.26.5
